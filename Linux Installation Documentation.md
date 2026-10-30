@@ -54,7 +54,6 @@ Confirm sudo
 42. su victor
 43. sudo whoami
 reboot and login as victor
-
 download different shell
 1. sudo pacman -S zsh
 download ssh 
