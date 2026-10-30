@@ -60,23 +60,24 @@ download different shell
 download ssh 
 2. sudo pacman -S openssh
 3. sudo systemctl enable --now sshd
+
 Color Coding!!!
-4. nano ~/.bashrc
-5. write: PS1='\[\e[1;32m\]\u@\h\[\e[0m\] \[\e[1;34m\]\w\[\e[0m\] \$ '
-6. alias ls='ls --color=auto'
-7. alias grep='grep --color=auto'
-8. alias diff='diff --color=auto'
-9. alias ip='ip -color=auto'
-10. source ~/.bashrc
-11. sudo nano /etc/pacman.conf
-12. delete the # on the color line
+5. nano ~/.bashrc
+6. write: PS1='\[\e[1;32m\]\u@\h\[\e[0m\] \[\e[1;34m\]\w\[\e[0m\] \$ '
+7. alias ls='ls --color=auto'
+8. alias grep='grep --color=auto'
+9. alias diff='diff --color=auto'
+10. alias ip='ip -color=auto'
+11. source ~/.bashrc
+12. sudo nano /etc/pacman.conf
+13. delete the # on the color line
 add aliases
-13. nano ~/.bashrc
+14. nano ~/.bashrc
 add following lines 
-14. alias ll='ls -lah'
-15. alias c='clear'
-16. alias ping='ping -c 4'
-17. alias install='sudo pacman -S'
+15. alias ll='ls -lah'
+16. alias c='clear'
+17. alias ping='ping -c 4'
+18. alias install='sudo pacman -S'
 Other installations
-18. install firefox 
-19. install open-vm-tools
+19. install firefox 
+20. install open-vm-tools
