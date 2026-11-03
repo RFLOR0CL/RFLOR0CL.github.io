@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux Installation Documentation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 850px;
+            margin: 30px auto;
+            padding: 0 20px;
+            line-height: 1.6;
+            color: #222;
+            background-color: white;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        h1 {
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+        }
+        h2 {
+            margin-top: 30px;
+        }
+        pre {
+            background: #f2f2f2;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: Consolas, monospace;
+        }
+        a {
+            color: #0645ad;
+        }
+    </style>
+</head>
+<body>
+    <h1>Linux Installation Documentation</h1>
+
+    <h2>Arch Linux ISO</h2>
+    <p><a href="https://mirrors.mit.edu/archlinux/iso/2026.10.01/archlinux-2026.10.01-x86_64.iso">Download the Arch Linux ISO</a></p>
+
+    <h2>VM Setup</h2>
+    <p>Created a new VM, set the disk size to 20GB, added the downloaded ISO, and selected Other Linux 6.x kernel 64-bit.</p>
+    <p>My first mistake was not giving the VM enough memory. The kernel would not boot until I corrected this.</p>
+
+    <h2>Connect to the Network</h2>
+    <ol>
+        <li><code>ip link set ens33 up</code></li>
+        <li><code>systemctl restart systemd-networkd</code></li>
+        <li><code>sleep 10</code></li>
+        <li><code>ip addr</code></li>
+    </ol>
+    <p>I originally had the network set to bridged and had to switch it back to NAT.</p>
+
+    <h2>Update System Clock</h2>
+    <pre><code>timedatectl set-timezone America/Chicago</code></pre>
+
+    <h2>Partition and Format Disks</h2>
+    <ol>
+        <li><code>lsblk</code></li>
+        <li><code>fdisk /dev/sda</code></li>
+        <li>In fdisk, I entered: <code>o</code>, <code>p</code>, <code>n</code>, pressed Enter three times, then entered <code>a</code>, <code>p</code>, and <code>w</code>.</li>
+        <li><code>mkfs.ext4 /dev/sda1</code></li>
+        <li><code>mount /dev/sda1 /mnt</code></li>
+        <li><code>lsblk</code></li>
+    </ol>
+    <p>I accidentally created a GPT table on my first try.</p>
+
+    <h2>Install Essential Packages</h2>
+    <pre><code>pacstrap -K /mnt base linux linux-firmware</code></pre>
+    <p>The installation did not complete at first because my connection was slow. I was using a hotspot. I disabled the download timeout with:</p>
+    <pre><code>sed -i '/^\[options\]/a DisableDownloadTimeout' /etc/pacman.conf</code></pre>
+    <p>After that, the installation completed successfully.</p>
+
+    <h2>Configure the System</h2>
+    <ol>
+        <li><code>genfstab -U /mnt &gt;&gt; /mnt/etc/fstab</code></li>
+        <li><code>arch-chroot /mnt</code></li>
+        <li><code>ln -sf /usr/share/zoneinfo/Area/Location /etc/localtime</code></li>
+        <li><code>hwclock --systohc</code></li>
+        <li><code>locale-gen</code></li>
+        <li><code>nano /etc/locale.gen</code> and remove the # before the <code>en_US.UTF-8 UTF-8</code> entry.</li>
+        <li><code>echo "VicsArchVM" &gt; /etc/hostname</code></li>
+        <li><code>passwd</code></li>
+    </ol>
+    <p>I had to return to this section after fixing the package installation because I had not been able to enter the installed system with arch-chroot.</p>
+
+    <h2>Install GRUB and Reboot</h2>
+    <ol>
+        <li><code>grub-install --target=i386-pc /dev/sda</code></li>
+        <li><code>grub-mkconfig -o /boot/grub/grub.cfg</code></li>
+        <li><code>exit</code></li>
+        <li><code>umount -R /mnt</code></li>
+        <li><code>reboot</code></li>
+    </ol>
+
+    <h2>Post-Installation</h2>
+    <h3>Install Desktop Environment</h3>
+    <pre><code>pacman -Syu
+pacman -S xorg-server lxqt sddm
+systemctl enable sddm
+systemctl set-default graphical.target</code></pre>
+
+    <h3>Create Users</h3>
+    <pre><code>useradd -m -G wheel -s /bin/bash victor
+passwd victor
+useradd -m -G wheel -s /bin/bash codi
+passwd codi
+EDITOR=nano visudo</code></pre>
+    <p>In visudo, I removed the # from <code>%wheel ALL=(ALL:ALL) ALL</code>. Then I switched to victor and checked sudo with:</p>
+    <pre><code>su victor
+sudo whoami</code></pre>
+    <p>After that, I rebooted and logged in as victor.</p>
+
+    <h2>Install Zsh and SSH</h2>
+    <pre><code>sudo pacman -S zsh
+sudo pacman -S openssh
+sudo systemctl enable --now sshd</code></pre>
+
+    <h2>Terminal Customization</h2>
+    <p>I edited <code>~/.bashrc</code> and added:</p>
+    <pre><code>PS1='\[\e[1;32m\]\u@\h\[\e[0m\] \[\e[1;34m\]\w\[\e[0m\] \$ '
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
+alias diff='diff --color=auto'
+alias ip='ip -color=auto'
+alias ll='ls -lah'
+alias c='clear'
+alias ping='ping -c 4'
+alias install='sudo pacman -S'</code></pre>
+    <p>I also enabled the Color option in <code>/etc/pacman.conf</code> and ran <code>source ~/.bashrc</code>.</p>
+
+    <h2>Other Installations</h2>
+    <ul>
+        <li>Firefox</li>
+        <li>open-vm-tools</li>
+    </ul>
+</body>
+</html>
