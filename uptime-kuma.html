@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System Admin Project 2 Documentation</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #1a1a1a; background: #fff; }
+  h1 { border-bottom: 1px solid #ccc; padding-bottom: .3rem; }
+  h2 { margin-top: 2rem; }
+  pre { background: #f4f4f4; border: 1px solid #ddd; border-radius: 4px; padding: .8rem 1rem; overflow-x: auto; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, Consolas, monospace; font-size: .9rem; }
+  @media (prefers-color-scheme: dark) {
+    body { color: #e6e6e6; background: #141414; }
+    h1 { border-color: #444; }
+    pre { background: #1f1f1f; border-color: #333; }
+  }
+</style>
+</head>
+<body>
+<h1>System Admin Project 2 Documentation</h1>
+<h2>Docker engine install</h2>
+<pre>1.   sudo apt update &amp;&amp; sudo apt install -y ca-certificates curl
+2.   sudo install -m 0755 -d /etc/apt/keyrings
+3. sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \  -o /etc/apt/keyrings/docker.asc
+4. echo &quot;deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \  https://download.docker.com/linux/ubuntu $(. /etc/os-release &amp;&amp; echo $VERSION_CODENAME) stable&quot; \  | sudo tee /etc/apt/sources.list.d/docker.list
+5. sudo apt update
+6.   sudo apt install -y docker-ce docker-ce-cli containerd.io \  docker-buildx-plugin docker-compose-plugin</pre>
+<h2>Post-install checks</h2>
+<pre>1. sudo systemctl enable --now docker
+2. systemctl is-enabled docker
+3. sudo docker run --rm hello-world
+4. docker compose version
+5. sudo usermod -aG docker $USER
+6. docker compose ps
+NAME          IMAGE                    COMMAND                  SERVICE       CREATED          STATUS                    PORTS
+uptime-kuma   louislam/uptime-kuma:2   &quot;/usr/bin/dumb-init …&quot;   uptime-kuma   10 minutes ago   Up 10 minutes (healthy)   0.0.0.0:3001-&gt;3001/tcp, [::]:3001-&gt;3001/tcp</pre>
+<h2>Uptime Kuma</h2>
+<pre>1. mkdir uptime-kuma
+2. cd uptime-kuma
+3. nano compose.yaml
+4. content: services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+    ports:
+      # &lt;Host Port&gt;:&lt;Container Port&gt;
+      - &quot;3001:3001&quot;
+5. docker compose up -d
+6. docker compose ps </pre>
+<h2>SSH configuration</h2>
+<pre>on Personal computer 
+1. ssh-keygen -t ed25519 (generate key)
+2. ssh-copy-id vm@ip address (copy key to vm)
+3. create passphrase
+4. sudo systemctl reload ssh
+5. i can now ssh into vm without needing password, only passphrase 
+6. $ sudo cat 50-cloud-init.conf
+PasswordAuthentication no</pre>
+<h2>Disable password</h2>
+<pre>1. sudo nano /etc/ssh/sshd_config
+2. find the line that says &quot;#PasswordAuthentication yes&quot; and delete the &quot;#&quot; and change yes to no</pre>
+<h2>firewall:</h2>
+<pre>1. sudo ufw allow OpenSSH
+2. sudo ufw allow 3001/tcp (application port)
+3. sudo ufw enable
+4. $ sudo ufw status
+Status: active
+
+To                         Action      From
+--                         ------      ----
+OpenSSH                    ALLOW       Anywhere
+3001/tcp                   ALLOW       Anywhere
+OpenSSH (v6)               ALLOW       Anywhere (v6)
+3001/tcp (v6)              ALLOW       Anywhere (v6)</pre>
+<h2>auto updates:</h2>
+<pre>1. sudo apt install -y unattended-upgrades
+2. $ cat /etc/apt/apt.conf.d/20auto-upgrades
+APT::Periodic::Update-Package-Lists &quot;1&quot;;
+APT::Periodic::Unattended-Upgrade &quot;1&quot;;</pre>
+<h2>backups:</h2>
+<pre>1. mkdir backups (from home directory)
+2. nano backup.sh (within uptime-kuma directory)
+
+#!/bin/bash
+set -euo pipefail
+
+APP_DIR=&quot;$HOME/uptime-kuma&quot;
+BACKUP_DIR=&quot;$HOME/backups&quot;
+KEEP=7
+
+mkdir -p &quot;$BACKUP_DIR&quot;
+cd &quot;$APP_DIR&quot;
+
+docker compose stop
+
+STAMP=$(date +%Y%m%d-%H%M%S)
+sudo tar -czf &quot;$BACKUP_DIR/uptime-kuma-$STAMP.tar.gz&quot; -C &quot;$APP_DIR&quot; data
+
+docker compose start
+
+ls -t &quot;$BACKUP_DIR&quot;/uptime-kuma-*.tar.gz | tail -n +$((KEEP + 1)) | xargs -r rm --
+
+3. chmod +x backup.sh
+4. ./backup.sh (Twice)</pre>
+<h2>restore</h2>
+<pre>1. created a monitor named RESTORE-TEST
+2. docker compose down (stop the app) 
+3. sudo rm -rf data (delete data)
+4. NEWEST=$(ls -t ~/backups/uptime-kuma-*.tar.gz | head -1)
+5. sudo tar -xzf &quot;$NEWEST&quot; -C ~/uptime-kuma
+6. docker compose up -d</pre>
+</body>
+</html>
